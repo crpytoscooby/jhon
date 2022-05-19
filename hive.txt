@@ -1,0 +1,216 @@
+
+
+________________________________________________________________________________
+
+HIVE:
+
+hduser@lab2-ThinkCentre-M700:~$ cd usr/local/hive
+bash: cd: usr/local/hive: No such file or directory
+hduser@lab2-ThinkCentre-M700:~$ cd /usr/local/hive
+hduser@lab2-ThinkCentre-M700:/usr/local/hive$ cd bin
+hduser@lab2-ThinkCentre-M700:/usr/local/hive/bin$ ./hive
+SLF4J: Class path contains multiple SLF4J bindings.
+SLF4J: Found binding in [jar:file:/usr/local/hive/lib/log4j-slf4j-impl-2.6.2.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: Found binding in [jar:file:/usr/local/hadoop/share/hadoop/common/lib/slf4j-log4j12-1.7.25.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: See http://www.slf4j.org/codes.html#multiple_bindings for an explanation.
+SLF4J: Actual binding is of type [org.apache.logging.slf4j.Log4jLoggerFactory]
+
+Logging initialized using configuration in jar:file:/usr/local/hive/lib/hive-common-2.3.0.jar!/hive-log4j2.properties Async: true
+Hive-on-MR is deprecated in Hive 2 and may not be available in the future versions. Consider using a different execution engine (i.e. spark, tez) or using Hive 1.X releases.
+hive> create database flight_hive ;
+OK
+Time taken: 1.374 seconds
+hive> use flight_hive
+    > ;
+OK
+Time taken: 0.03 seconds
+hive> create table flight
+    > (
+    > id int,
+    > source string,
+    > destination string,
+    > arrival_time string,
+    > departure string,
+    > delay int
+    > ) row format delimited fields terminated by ',' stored as textfile;
+OK
+Time taken: 1.902 seconds
+hive> load data local inpath '/home/hduser/Downloads/flight.csv' into table
+    > flight;
+Loading data to table flight_hive.flight
+OK
+Time taken: 1.34 seconds
+hive> select * from flight;
+OK
+1	Pune	Ahmednagar	10.00am	10.00pm	1
+2	Mumbai	Pune	11.00am	9.00pm	2
+3	Satara	Goa	12.00am	8.00am	1
+4	US	India	4.00am	8.00pm	2
+5	Banglore	Mysore	11.00am	9.00pm	1
+Time taken: 2.251 seconds, Fetched: 5 row(s)
+hive> create external table flight_ex(id int, source string , destination string,arrival_time
+    > string ,departure string ,delay int ) stored by
+    > 'org.apache.hadoop.hive.hbase.HBaseStorageHandler' WITH
+    > SERDEPROPERTIES
+    > ("hbase.columns.mapping"=":key,flight_info:source,flight_info:destination,flight_schedule:arrival_time,flight_schedule:departure,flight_schedule:delay")
+    > TBLPROPERTIES("hbase.table.name"="flight_details");
+OK
+Time taken: 1.699 seconds
+hive> insert into flight_ex select * from flight;
+WARNING: Hive-on-MR is deprecated in Hive 2 and may not be available in the future versions. Consider using a different execution engine (i.e. spark, tez) or using Hive 1.X releases.
+Query ID = hduser_20220428124749_f0ff68c7-9cfb-4570-abcf-6afd78e0facb
+Total jobs = 1
+Launching Job 1 out of 1
+Number of reduce tasks is set to 0 since there's no reduce operator
+Job running in-process (local Hadoop)
+2022-04-28 12:47:53,876 Stage-3 map = 100%,  reduce = 0%
+Ended Job = job_local2024031870_0001
+MapReduce Jobs Launched:
+Stage-Stage-3:  HDFS Read: 318 HDFS Write: 159 SUCCESS
+Total MapReduce CPU Time Spent: 0 msec
+OK
+Time taken: 4.498 seconds
+hive> select * from flight_ex;
+OK
+1	Pune	Ahmednagar	10.00am	10.00pm	1
+2	Mumbai	Pune	11.00am	9.00pm	2
+3	Satara	Goa	12.00am	8.00am	1
+4	US	India	4.00am	8.00pm	2
+5	Banglore	Mysore	11.00am	9.00pm	1
+Time taken: 0.204 seconds, Fetched: 5 row(s)
+hive> CREATE INDEX hbasefltnew_index
+    > > ON TABLE flight_ex (delay)
+    > > AS 'org.apache.hadoop.hive.ql.index.compact.CompactIndexHandler'
+    > > WITH DEFERRED REBUILD;
+FAILED: ParseException line 2:0 extraneous input '>' expecting ON near ''org.apache.hadoop.hive.ql.index.compact.CompactIndexHandler''
+line 3:0 extraneous input '>' expecting AS near ''org.apache.hadoop.hive.ql.index.compact.CompactIndexHandler''
+line 4:0 missing EOF at '>' near ''org.apache.hadoop.hive.ql.index.compact.CompactIndexHandler''
+hive> CREATE INDEX hbasefltnew_index
+    > ON TABLE flight_ex (delay)
+    > AS 'org.apache.hadoop.hive.ql.index.compact.CompactIndexHandler'
+    > WITH DEFERRED REBUILD;
+OK
+Time taken: 0.742 seconds
+hive> select avg(delay) from flight_ex;
+WARNING: Hive-on-MR is deprecated in Hive 2 and may not be available in the future versions. Consider using a different execution engine (i.e. spark, tez) or using Hive 1.X releases.
+Query ID = hduser_20220428124905_ba39e4f8-bac5-4d4e-9519-3d97fb8ab100
+Total jobs = 1
+Launching Job 1 out of 1
+Number of reduce tasks determined at compile time: 1
+In order to change the average load for a reducer (in bytes):
+  set hive.exec.reducers.bytes.per.reducer=<number>
+In order to limit the maximum number of reducers:
+  set hive.exec.reducers.max=<number>
+In order to set a constant number of reducers:
+  set mapreduce.job.reduces=<number>
+Job running in-process (local Hadoop)
+2022-04-28 12:49:08,568 Stage-1 map = 100%,  reduce = 0%
+2022-04-28 12:49:09,576 Stage-1 map = 100%,  reduce = 100%
+Ended Job = job_local106620375_0002
+MapReduce Jobs Launched:
+Stage-Stage-1:  HDFS Read: 636 HDFS Write: 318 SUCCESS
+Total MapReduce CPU Time Spent: 0 msec
+OK
+1.4
+Time taken: 3.765 seconds, Fetched: 1 row(s)
+hive>
+
+
+
+
+HBASE:
+hduser@lab2-ThinkCentre-M700:~$ start-dfs.sh
+22/04/28 12:41:15 WARN util.NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+Starting namenodes on [localhost]
+localhost: namenode running as process 3316. Stop it first.
+localhost: datanode running as process 3476. Stop it first.
+Starting secondary namenodes [0.0.0.0]
+0.0.0.0: secondarynamenode running as process 3749. Stop it first.
+22/04/28 12:41:20 WARN util.NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+hduser@lab2-ThinkCentre-M700:~$ start-yarn.sh
+starting yarn daemons
+resourcemanager running as process 4325. Stop it first.
+localhost: nodemanager running as process 4455. Stop it first.
+hduser@lab2-ThinkCentre-M700:~$ cd /usr/local/hbase/bin
+hduser@lab2-ThinkCentre-M700:/usr/local/hbase/bin$ ./start-hbase.sh
+localhost: starting zookeeper, logging to /usr/local/hbase/bin/../logs/hbase-hduser-zookeeper-lab2-ThinkCentre-M700.out
+starting master, logging to /usr/local/hbase/logs/hbase-hduser-master-lab2-ThinkCentre-M700.out
+OpenJDK 64-Bit Server VM warning: ignoring option PermSize=128m; support was removed in 8.0
+OpenJDK 64-Bit Server VM warning: ignoring option MaxPermSize=128m; support was removed in 8.0
+starting regionserver, logging to /usr/local/hbase/logs/hbase-hduser-1-regionserver-lab2-ThinkCentre-M700.out
+hduser@lab2-ThinkCentre-M700:/usr/local/hbase/bin$ ./hbase shell
+2022-04-28 12:42:43,675 WARN  [main] util.NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+SLF4J: Class path contains multiple SLF4J bindings.
+SLF4J: Found binding in [jar:file:/usr/local/hbase/lib/slf4j-log4j12-1.7.5.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: Found binding in [jar:file:/usr/local/hadoop/share/hadoop/common/lib/slf4j-log4j12-1.7.25.jar!/org/slf4j/impl/StaticLoggerBinder.class]
+SLF4J: See http://www.slf4j.org/codes.html#multiple_bindings for an explanation.
+SLF4J: Actual binding is of type [org.slf4j.impl.Log4jLoggerFactory]
+HBase Shell; enter 'help<RETURN>' for list of supported commands.
+Type "exit<RETURN>" to leave the HBase Shell
+Version 1.2.6, rUnknown, Mon May 29 02:25:32 CDT 2017
+
+hbase(main):001:0> create 'flight_details' , 'flight_info','flight_schedule'
+
+0 row(s) in 2.4570 seconds
+=> Hbase::Table - flight_details
+
+
+hbase(main):002:0> scan 'flight_details'
+ROW                   COLUMN+CELL                                               
+0 row(s) in 0.0910 seconds
+
+hbase(main):003:0> scan 'flight_details'
+ROW                   COLUMN+CELL                                               
+ 1                    column=flight_info:destination, timestamp=1651130273373, v
+                      alue=Ahmednagar                                           
+ 1                    column=flight_info:source, timestamp=1651130273373, value=
+                      Pune                                                      
+ 1                    column=flight_schedule:arrival_time, timestamp=16511302733
+                      73, value=10.00am                                         
+ 1                    column=flight_schedule:delay, timestamp=1651130273373, val
+                      ue=1                                                      
+ 1                    column=flight_schedule:departure, timestamp=1651130273373,
+                       value=10.00pm                                            
+ 2                    column=flight_info:destination, timestamp=1651130273373, v
+                      alue=Pune                                                 
+ 2                    column=flight_info:source, timestamp=1651130273373, value=
+                      Mumbai                                                    
+ 2                    column=flight_schedule:arrival_time, timestamp=16511302733
+                      73, value=11.00am                                         
+ 2                    column=flight_schedule:delay, timestamp=1651130273373, val
+                      ue=2                                                      
+ 2                    column=flight_schedule:departure, timestamp=1651130273373,
+                       value=9.00pm                                             
+ 3                    column=flight_info:destination, timestamp=1651130273373, v
+                      alue=Goa                                                  
+ 3                    column=flight_info:source, timestamp=1651130273373, value=
+                      Satara                                                    
+ 3                    column=flight_schedule:arrival_time, timestamp=16511302733
+                      73, value=12.00am                                         
+ 3                    column=flight_schedule:delay, timestamp=1651130273373, val
+                      ue=1                                                      
+ 3                    column=flight_schedule:departure, timestamp=1651130273373,
+                       value=8.00am                                             
+ 4                    column=flight_info:destination, timestamp=1651130273373, v
+                      alue=India                                                
+ 4                    column=flight_info:source, timestamp=1651130273373, value=
+                      US                                                        
+ 4                    column=flight_schedule:arrival_time, timestamp=16511302733
+                      73, value=4.00am                                          
+ 4                    column=flight_schedule:delay, timestamp=1651130273373, val
+                      ue=2                                                      
+ 4                    column=flight_schedule:departure, timestamp=1651130273373,
+                       value=8.00pm                                             
+ 5                    column=flight_info:destination, timestamp=1651130273373, v
+                      alue=Mysore                                               
+ 5                    column=flight_info:source, timestamp=1651130273373, value=
+                      Banglore                                                  
+ 5                    column=flight_schedule:arrival_time, timestamp=16511302733
+                      73, value=11.00am                                         
+ 5                    column=flight_schedule:delay, timestamp=1651130273373, val
+                      ue=1                                                      
+ 5                    column=flight_schedule:departure, timestamp=1651130273373,
+                       value=9.00pm                                             
+5 row(s) in 0.0910 seconds
+
+hbase(main):004:0>
