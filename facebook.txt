@@ -1,0 +1,54 @@
+import numpy as np
+import pandas as pd
+
+df = pd.read_csv("dataset_Facebook.csv", sep=";")
+
+df.head()
+
+df.isnull().sum()
+
+df.Paid.nunique()
+
+df = df.dropna(subset=["Paid"])
+
+df.isnull().sum()
+
+df = df.fillna(df.mean())
+
+df.isnull().sum()
+
+df.shape
+
+df.describe()
+
+df_subset_1 = df.loc[250:]
+df_subset_1.head()
+
+df_subset_1.shape
+
+df_subset_2 = df.loc[:249]
+df_subset_2.tail()
+
+df_subset_2.shape
+
+df_merge_row = pd.concat([df_subset_1, df_subset_2])
+df_merge_row
+
+df_merge_row.reset_index()
+
+df_merge_row.shape
+
+df_subset_1 = df.iloc[:,:9]
+df_subset_1.head()
+
+df_subset_1.shape
+
+df_transpose = df.T
+df_transpose
+
+df_reshape = df.melt(id_vars =['Category', 'Lifetime,Engaged,Users'])
+df_reshape
+
+col = df[['like','comment','share']]
+df_pivot_reshape = pd.pivot_table(col,index=['comment','share'])
+df_pivot_reshape
